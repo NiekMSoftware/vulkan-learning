@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <optional>
+#include <set>
 #include <vector>
 #include <print>
 
@@ -59,6 +60,7 @@ private:
 	VkDevice logicalDevice = nullptr;
 
 	VkQueue graphicsQueue = nullptr;
+	VkQueue presentQueue = nullptr;
 
 	VkInstance pInstance = nullptr;
 	VkDebugUtilsMessengerEXT debugMessenger = nullptr;
@@ -162,15 +164,21 @@ private:
 	void createLogicalDevice() {
 		const QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-		// Specify the queues to be created
-		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-		queueCreateInfo.queueCount = 1;
+		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+		std::set<uint32_t> uniqueQueueFamilies{
+			indices.graphicsFamily.value(),
+			indices.presentFamily.value()
+		};
 
-		// Queue priority must be between 0.0 and 1.0
-		constexpr float queuePriority = 1.0f;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
+		float queuePriority = 1.0f;
+		for (uint32_t queueFamily : uniqueQueueFamilies) {
+			VkDeviceQueueCreateInfo queueCreateInfo{};
+			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueCreateInfo.queueFamilyIndex = queueFamily;
+			queueCreateInfo.queueCount = 1;
+			queueCreateInfo.pQueuePriorities = &queuePriority;
+			queueCreateInfos.push_back(queueCreateInfo);
+		}
 
 		// Specify device features (none for now, this will be filled in later)
 		VkPhysicalDeviceFeatures deviceFeatures{};
@@ -179,8 +187,8 @@ private:
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-		createInfo.pQueueCreateInfos = &queueCreateInfo;
-		createInfo.queueCreateInfoCount = 1;
+		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 		createInfo.pEnabledFeatures = &deviceFeatures;
 
@@ -197,7 +205,12 @@ private:
 			throw std::runtime_error("failed to create logical device!");
 		}
 
+		if (!indices.isComplete()) {
+			throw std::runtime_error("failed to find required queue families!");
+		}
+
 		vkGetDeviceQueue(logicalDevice, indices.graphicsFamily.value(), 0, &graphicsQueue);
+		vkGetDeviceQueue(logicalDevice, indices.presentFamily.value(), 0, &presentQueue);
 	}
 
 	void createSurface() {
