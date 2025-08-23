@@ -18,4 +18,4 @@ and whether the queues support presentation to a surface.
 
 ## Sources
 - [Vulkan Specification - Queue Family Properties](https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#devsandqueues-queues)
-- [Vulkan Tutorial - Logical device and Queues](https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Logical_device_and_queues)
+- [Vulkan Tutorial - Queue families](https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Logical_device_and_queues)
