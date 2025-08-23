@@ -4,9 +4,10 @@ This repository is dedicated to learning Vulkan, a low-level graphics API. It co
 This is being built with the help of the [Vulkan Tutorial](https://vulkan-tutorial.com/) and other resources.
 
 # Directory Structure
-- `examples/`: Contains various Vulkan examples, each in its own subdirectory.
-- `resources/`: Contains shader code and other resources used in the examples.
 - `docs/`: Contains documentation and notes related to Vulkan.
+- `examples/`: Contains various Vulkan examples, each in its own subdirectory.
+- `libs/`: Contains third-party libraries used in the project, such as GLFW and GLM.
+- `resources/`: Contains shader code and other resources used in the examples.
 - `CMakeLists.txt`: The main CMake file for building the project.
 - `README.md`: This file, providing an overview of the repository.
 - `LICENSE`: The license file for the repository.
@@ -18,6 +19,7 @@ This project has been built using the following tools:
 - [CMake](https://cmake.org/)
 - [Vulkan SDK](https://vulkan.lunarg.com/)
 - [GLFW](https://www.glfw.org/)
+- [GLM](https://github.com/g-truc/glm)
 
 # Disclaimer
 This repository is for educational purposes only. It is not intended for production use. The examples may not follow best practices and are meant to demonstrate Vulkan concepts and features. Feedback is always welcome!
