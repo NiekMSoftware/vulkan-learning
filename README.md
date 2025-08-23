@@ -6,7 +6,7 @@ This is being built with the help of the [Vulkan Tutorial](https://vulkan-tutori
 # Directory Structure
 - `examples/`: Contains various Vulkan examples, each in its own subdirectory.
 - `resources/`: Contains shader code and other resources used in the examples.
-- `docs/`: Contains documentation and notes related to Vulkan and the examples.
+- `docs/`: Contains documentation and notes related to Vulkan.
 - `CMakeLists.txt`: The main CMake file for building the project.
 - `README.md`: This file, providing an overview of the repository.
 - `LICENSE`: The license file for the repository.
