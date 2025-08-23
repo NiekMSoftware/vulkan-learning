@@ -50,6 +50,18 @@ struct QueueFamilyIndices {
 };
 
 class HelloTriangleApplication {
+private:
+	// === Private Members ===
+	GLFWwindow* pWindow = nullptr;
+
+	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+	VkDevice logicalDevice = nullptr;
+
+	VkQueue graphicsQueue = nullptr;
+
+	VkInstance pInstance = nullptr;
+	VkDebugUtilsMessengerEXT debugMessenger = nullptr;
+
 public:
 	void run() {
 		initWindow();
@@ -178,6 +190,8 @@ private:
 		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &logicalDevice) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create logical device!");
 		}
+
+		vkGetDeviceQueue(logicalDevice, indices.graphicsFamily.value(), 0, &graphicsQueue);
 	}
 
 	// === Physical Device Selection ===
@@ -304,14 +318,6 @@ private:
 
 		return VK_FALSE;
 	}
-
-	// === Private Members ===
-	GLFWwindow* pWindow = nullptr;
-
-	VkInstance pInstance = VK_NULL_HANDLE;
-	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-	VkDevice logicalDevice = VK_NULL_HANDLE;
-	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 };
 
 int main() {
