@@ -43,9 +43,10 @@ static void DestroyDebugUtilsMessengerExt(const VkInstance instance,
 
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
+	std::optional<uint32_t> presentFamily;
 
 	[[nodiscard]] bool isComplete() const {
-		return graphicsFamily.has_value();
+		return graphicsFamily.has_value() && presentFamily.has_value();
 	}
 };
 
@@ -61,6 +62,8 @@ private:
 
 	VkInstance pInstance = nullptr;
 	VkDebugUtilsMessengerEXT debugMessenger = nullptr;
+
+	VkSurfaceKHR surface = nullptr;
 
 public:
 	void run() {
@@ -85,6 +88,7 @@ private:
 	void initVulkan() {
 		createInstance();
 		setupDebugMessenger();
+		createSurface();
 		pickPhysicalDevice();
 		createLogicalDevice();
 	}
@@ -101,6 +105,8 @@ private:
 		}
 
 		vkDestroyDevice(logicalDevice, nullptr);
+
+		vkDestroySurfaceKHR(pInstance, surface, nullptr);
 		vkDestroyInstance(pInstance, nullptr);
 
 		glfwDestroyWindow(pWindow);
@@ -194,6 +200,12 @@ private:
 		vkGetDeviceQueue(logicalDevice, indices.graphicsFamily.value(), 0, &graphicsQueue);
 	}
 
+	void createSurface() {
+		if (glfwCreateWindowSurface(pInstance, pWindow, nullptr, &surface) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create window surface!");
+		}
+	}
+
 	// === Physical Device Selection ===
 	void pickPhysicalDevice()  {
 		uint32_t deviceCount = 0;
@@ -218,13 +230,13 @@ private:
 		}
 	}
 
-	static bool isDeviceSuitable(const VkPhysicalDevice device) {
+	bool isDeviceSuitable(const VkPhysicalDevice device) {
 		const QueueFamilyIndices indices = findQueueFamilies(device);
 
 		return indices.isComplete();
 	}
 
-	static QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice device) {
+	QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice device) {
 		QueueFamilyIndices indices{};
 
 		// Get the list of queue families
@@ -239,9 +251,15 @@ private:
 		for (const auto& queueFamily : queueFamilies) {
 			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 				indices.graphicsFamily = i;
+
+				VkBool32 presentSupport = false;
+				vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+				if (presentSupport) {
+					indices.presentFamily = i;
+				}
 			}
 
-			// Stop searching if we've found all required queue families
+			// Break early if we found the required families
 			if (indices.isComplete()) {
 				break;
 			}
