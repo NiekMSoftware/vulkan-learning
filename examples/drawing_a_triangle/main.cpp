@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
+#include <optional>
 #include <vector>
 #include <print>
 
@@ -19,6 +20,34 @@ constexpr bool enableValidationLayers = false;
 #else
 constexpr bool enableValidationLayers = true;
 #endif
+
+static VkResult CreateDebugUtilsMessengerExt(const VkInstance instance,
+	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+	const VkAllocationCallbacks* pAllocator,
+	VkDebugUtilsMessengerEXT* pDebugMessenger) {
+	if (const auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"); func != nullptr) {
+		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+	}
+	else {
+		return VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
+}
+
+static void DestroyDebugUtilsMessengerExt(const VkInstance instance,
+	const VkDebugUtilsMessengerEXT debugMessenger,
+	const VkAllocationCallbacks* pAllocator) {
+	if (const auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"); func != nullptr) {
+		func(instance, debugMessenger, pAllocator);
+	}
+}
+
+struct QueueFamilyIndices {
+	std::optional<uint32_t> graphicsFamily;
+
+	[[nodiscard]] bool isComplete() const {
+		return graphicsFamily.has_value();
+	}
+};
 
 class HelloTriangleApplication {
 public:
@@ -55,7 +84,7 @@ private:
 
 	void cleanup() const {
 		if (enableValidationLayers) {
-			destroyDebugUtilsMessengerEXT(pInstance, debugMessenger, nullptr);
+			DestroyDebugUtilsMessengerExt(pInstance, debugMessenger, nullptr);
 		}
 
 		vkDestroyInstance(pInstance, nullptr);
@@ -110,7 +139,7 @@ private:
 		}
 	}
 
-	void pickPhysicalDevice() const {
+	void pickPhysicalDevice()  {
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
 		uint32_t deviceCount = 0;
@@ -135,14 +164,38 @@ private:
 		}
 	}
 
-	static bool isDeviceSuitable(const VkPhysicalDevice device) {
-		VkPhysicalDeviceProperties deviceProperties;
-		VkPhysicalDeviceFeatures deviceFeatures;
-		vkGetPhysicalDeviceProperties(device, &deviceProperties);
-		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+	bool isDeviceSuitable(const VkPhysicalDevice device) {
+		const QueueFamilyIndices indices = findQueueFamilies(device);
 
-		return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-			deviceFeatures.geometryShader;
+		return indices.isComplete();
+	}
+
+	static QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice device) {
+		QueueFamilyIndices indices{};
+
+		// Get the list of queue families
+		uint32_t queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+		// Find at least one queue family that supports VK_QUEUE_GRAPHICS_BIT
+		int i = 0;
+		for (const auto& queueFamily : queueFamilies) {
+			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+				indices.graphicsFamily = i;
+			}
+
+			// Stop searching if we've found all required queue families
+			if (indices.isComplete()) {
+				break;
+			}
+
+			i++;
+		}
+
+		return indices;
 	}
 
 	// === Validation Layers ===
@@ -196,7 +249,7 @@ private:
 		VkDebugUtilsMessengerCreateInfoEXT createInfo;
 		populateDebugMessengerCreateInfo(createInfo);
 
-		if (createDebugUtilsMessengerExt(pInstance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+		if (CreateDebugUtilsMessengerExt(pInstance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
 			throw std::runtime_error("failed to set up debug messenger!");
 		}
 	}
@@ -210,26 +263,6 @@ private:
 		std::cerr << "validation layer: " << pCallbackData->pMessage << '\n';
 
 		return VK_FALSE;
-	}
-
-	static VkResult createDebugUtilsMessengerExt(const VkInstance instance,
-		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-		const VkAllocationCallbacks* pAllocator,
-		VkDebugUtilsMessengerEXT* pDebugMessenger) {
-		if (const auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"); func != nullptr) {
-			return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-		}
-		else {
-			return VK_ERROR_EXTENSION_NOT_PRESENT;
-		}
-	}
-
-	static void destroyDebugUtilsMessengerEXT(const VkInstance instance,
-		const VkDebugUtilsMessengerEXT debugMessenger,
-		const VkAllocationCallbacks* pAllocator) {
-		if (const auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"); func != nullptr) {
-			func(instance, debugMessenger, pAllocator);
-		}
 	}
 
 	// === Private Members ===
