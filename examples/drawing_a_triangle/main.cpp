@@ -164,6 +164,7 @@ private:
 	void createLogicalDevice() {
 		const QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
+		// Specify the queues to be created
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		std::set<uint32_t> uniqueQueueFamilies{
 			indices.graphicsFamily.value(),
@@ -172,6 +173,7 @@ private:
 
 		float queuePriority = 1.0f;
 		for (uint32_t queueFamily : uniqueQueueFamilies) {
+			// Create info for each queue
 			VkDeviceQueueCreateInfo queueCreateInfo{};
 			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 			queueCreateInfo.queueFamilyIndex = queueFamily;
@@ -186,12 +188,10 @@ private:
 		// Create info for the logical device
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 		createInfo.pEnabledFeatures = &deviceFeatures;
-
 		createInfo.enabledExtensionCount = 0;
 
 		if (enableValidationLayers) {
@@ -201,14 +201,12 @@ private:
 			createInfo.enabledLayerCount = 0;
 		}
 
+		// Create the logical device
 		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &logicalDevice) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create logical device!");
 		}
 
-		if (!indices.isComplete()) {
-			throw std::runtime_error("failed to find required queue families!");
-		}
-
+		// Retrieve the queue handles
 		vkGetDeviceQueue(logicalDevice, indices.graphicsFamily.value(), 0, &graphicsQueue);
 		vkGetDeviceQueue(logicalDevice, indices.presentFamily.value(), 0, &presentQueue);
 	}
