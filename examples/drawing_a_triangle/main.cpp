@@ -16,6 +16,10 @@ const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
+const std::vector<const char*> deviceExtensions = {
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
 #if NDEBUG
 constexpr bool enableValidationLayers = false;
 #else
@@ -192,7 +196,8 @@ private:
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 		createInfo.pEnabledFeatures = &deviceFeatures;
-		createInfo.enabledExtensionCount = 0;
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 		if (enableValidationLayers) {
 			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -217,7 +222,7 @@ private:
 		}
 	}
 
-	// === Physical Device Selection ===
+	// === Physical Device Methods ===
 	void pickPhysicalDevice()  {
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(pInstance, &deviceCount, nullptr);
@@ -243,8 +248,24 @@ private:
 
 	bool isDeviceSuitable(const VkPhysicalDevice device) {
 		const QueueFamilyIndices indices = findQueueFamilies(device);
+		const bool extensionsSupported = checkDeviceExtensionSupport(device);
 
-		return indices.isComplete();
+		return indices.isComplete() && extensionsSupported;
+	}
+
+	bool checkDeviceExtensionSupport(const VkPhysicalDevice device) {
+		uint32_t extensionCount;
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+		std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+		for (const auto& extension : availableExtensions) {
+			requiredExtensions.erase(extension.extensionName);
+		}
+
+		return requiredExtensions.empty();
 	}
 
 	QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice device) {
@@ -281,7 +302,7 @@ private:
 		return indices;
 	}
 
-	// === Validation Layers ===
+	// === Validation Layer Methods ===
 	static bool checkValidationLayerSupport() {
 		uint32_t layerCount;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
